@@ -21,3 +21,11 @@ do
 	#outbound forwarded tcp packets
 	iptables -A FORWARD -o em1 -i p3p1 -p tcp --dport $i -j ACCEPT  
 done
+
+for i in ${UDPPORTS[@]}
+do
+	#inbound udp on DNS
+iptables -A FORWARD -i em1 -o p3p1 -p udp --sport 53 -j ACCEPT  
+#outbound udp on DNS
+iptables -A FORWARD -o em1 -i p3p1  -p udp --dport 53 -j ACCEPT  
+done

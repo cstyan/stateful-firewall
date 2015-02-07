@@ -13,9 +13,16 @@ TCPPORTS=(53 80 443)
 UDPPORTS=(67 68)
 ICMPSERVICES=(0 8)
 
-#iptables
-#########
+#drop section
+#block all inbound traffic to low ports
+iptables -A FORWARD -i em1 -o p3p1 -p tcp,udp --sport 0:1024
 
+#block christmas tree scan
+iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL ALL -j DROP
+
+
+
+#accept section
 #tcp
 for i in ${TCPPORTS[@]}
 do

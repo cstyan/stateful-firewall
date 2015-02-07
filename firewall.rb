@@ -46,7 +46,7 @@ def writeTCP
 	run = 0
 	while run < @tcpServices.length
 		#convert the current type to a string for the iptables command
-		port = @tcpServices[run].to_s
+		port = @tcpServices[run].inspect
 		#inbound forwarded tcp packets on DNS, HTTP, HTTPS
 		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp -dport #{port} -m state--state NEW,ESTABLISHED`
 		#outbound forwarded tcp packets on DNS, HTTP, HTTPS
@@ -57,9 +57,9 @@ end
 
 def writeUDP
 	run = 0
-	while run < @tcpServices.length
+	while run < @udpServices.length
 		#convert the current type to a string for the iptables command
-		port = @tcpServices[run].to_s
+		port = @udpServices[run].inspect
 		#inbound forwarded UDP packets
 		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp -dport #{port} -m state --state NEW,ESTABLISHED`
 		#outbound forwarded UDP packets
@@ -89,7 +89,7 @@ def writeFirewall
 	#clear any user defined chains we have
 
 	#write tcp
-	writeTCP
+	#writeTCP
 	writeUDP
 	writeICMP
 	#write udp

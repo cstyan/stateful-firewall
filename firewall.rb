@@ -43,8 +43,9 @@ def userParams
 end
 
 def drop
-	#all inbound packets to ports less than 1024
-	`iptables -A FORWARD -i em1 -o p3p1 -p tcp,udp --sport 0:1023 -j drop`
+	#all inbound packets to ports less than 1024, can't do two protocols in one line
+	`iptables -A FORWARD -i em1 -o p3p1 -p tcp --sport 0:1023 -j drop`
+	`iptables -A FORWARD -i em1 -o p3p1 -p udp --sport 0:1023 -j drop`
 	#drop incoming christmas tree packets
 	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL ALL -j drop`
 	#drop outbound christmas tree packets
@@ -52,7 +53,7 @@ def drop
 	#drop incoming null scan packets
 	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL NONE -j drop`
 	#drop outbound null scan packets
-	`iptables -A FORWARD -p tcp -0 em1 --tcp-flags ALL NONE -j drop`
+	`iptables -A FORWARD -p tcp -o em1 --tcp-flags ALL NONE -j drop`
 
 	#drop anything that gets forwarded to drop chain
 	`iptables -A drop -j DROP`
@@ -102,7 +103,7 @@ def writeTCP
 		#convert the current type to a string for the iptables command
 		port = @tcpServices[run]
 		#inbound forwarded tcp packets on DNS, HTTP, HTTPS
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state--state NEW,ESTABLISHED -j tcpIn`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j tcpIn`
 		#outbound forwarded tcp packets on DNS, HTTP, HTTPS
 		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j tcpOut`
 		run = run + 1

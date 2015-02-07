@@ -108,17 +108,19 @@ def allowLocal
 	`iptables -A OUTPUT -p udp --dport 53 -j ACCEPT`
 end
 
+def routing
+	
+end
+
 def writeTCP
 	run = 0
 	while run < @tcpServices.length
 		#convert the current type to a string for the iptables command
 		port = @tcpServices[run]
 		#inbound forwarded tcp packets
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j tcpIn`
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --sport #{port} -m state --state NEW,ESTABLISHED -j tcpIn`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		#outbound forwarded tcp packets
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --sport #{port} -m state --state NEW,ESTABLISHED -j tcpOut`
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j tcpOut`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --sport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		run = run + 1
 	end
 	#accept everything that gets forwarded to tcpIn and tcpOut
@@ -132,11 +134,9 @@ def writeUDP
 		#convert the current type to a string for the iptables command
 		port = @udpServices[run]
 		#inbound forwarded UDP packets
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j udpIn`
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j udpIn`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		#outbound forwarded UDP packets
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j udpOut`
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j udpOut`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		run = run + 1
 	end
 	#accept everything that gets forwarded to udpIn and udpOut

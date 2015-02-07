@@ -165,7 +165,7 @@ def writeFirewall
 	puts "removing existing user chain"
 	removeUserChains
 
-	put "setting default policies to drop"
+	puts "setting default policies to drop"
 	defaultPolicy
 
 	puts"creating user chains"
@@ -182,12 +182,8 @@ end
 
 def main
 	#we should call config nat here
-
-	createUserChains	
 	writeFirewall
 end
 
 #start script
 main
-
-

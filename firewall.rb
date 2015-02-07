@@ -89,6 +89,9 @@ def writeFirewall
 	#clear any user defined chains we have
 
 	#write tcp
+	writeTCP
+	writeUDP
+	writeICMP
 	#write udp
 	#write icmp
 end

@@ -4,7 +4,7 @@
 @internalInterface = "p3p1"
 @extNetwork
 @externalInterface = "em1"
-@tcpServices = Array.[53, 80, 443]
+@tcpServices = Array[53, 80, 443]
 @udpServices = Array[67, 68]
 @icmpServices = Array[0, 8]
 

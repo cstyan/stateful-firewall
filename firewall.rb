@@ -46,11 +46,11 @@ def writeTCP
 	run = 0
 	while run < @tcpServices.length
 		#convert the current type to a string for the iptables command
-		port = @tcpServices[run].inspect
+		port = @tcpServices[run]
 		#inbound forwarded tcp packets on DNS, HTTP, HTTPS
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp -dport #{port} -m state--state NEW,ESTABLISHED`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state--state NEW,ESTABLISHED`
 		#outbound forwarded tcp packets on DNS, HTTP, HTTPS
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp -dport #{port} -m state --state NEW,ESTABLISHED`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED`
 		run = run + 1
 	end
 end
@@ -59,11 +59,11 @@ def writeUDP
 	run = 0
 	while run < @udpServices.length
 		#convert the current type to a string for the iptables command
-		port = @udpServices[run].inspect
+		port = @udpServices[run]
 		#inbound forwarded UDP packets
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp -dport #{port} -m state --state NEW,ESTABLISHED`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED`
 		#outbound forwarded UDP packets
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp -dport #{port} -m state --state NEW,ESTABLISHED`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED`
 		run = run + 1
 	end
 end
@@ -72,7 +72,7 @@ def writeICMP
 	run = 0
 	while run < @icmpServices.length
 		#convert the current type to a string for the iptables command
-		typeString = @icmpServices[run].to_s
+		typeString = @icmpServices[run]
 		#inbound ICMP on allowed ports
 		`iptables -A FORWARD -i #{@internalInterface} -o #{@externalInterface} -p icmp --icmp-type #{typeString} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		#outbound ICMP on allowed ports

@@ -97,6 +97,17 @@ def createUserChains
 	`iptables -N other`
 end
 
+#allows dns and dhcp on the in/out chains of the firewall
+#note that this has nothing to do with the forwarding
+def allowLocal
+	#allow dhcp
+	`iptables -A INPUT -p udp --dport 67:68 --sport 67:68 -j ACCEPT`
+
+	#allow dns
+	`iptables -A INPUT -p udp --sport 53 -j ACCEPT`
+	`iptables -A OUTPUT -p udp --dport 53 -j ACCEPT`
+end
+
 def writeTCP
 	run = 0
 	while run < @tcpServices.length
@@ -171,6 +182,8 @@ def writeFirewall
 
 	puts "setting default policies to drop"
 	defaultPolicy
+
+	allowLocal
 
 	puts"creating user chains"
 	createUserChains

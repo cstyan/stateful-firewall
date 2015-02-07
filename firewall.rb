@@ -46,7 +46,7 @@ def writeTCP
 	run = 0
 	while run < @tcpServices.length
 		#convert the current type to a string for the iptables command
-		port = @tcpServices[run]
+		port = @tcpServices[run].to_s
 		#inbound forwarded tcp packets on DNS, HTTP, HTTPS
 		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp -dport #{port} -m state--state NEW,ESTABLISHED`
 		#outbound forwarded tcp packets on DNS, HTTP, HTTPS
@@ -59,7 +59,7 @@ def writeUDP
 	run = 0
 	while run < @tcpServices.length
 		#convert the current type to a string for the iptables command
-		port = @tcpServices[run]
+		port = @tcpServices[run].to_s
 		#inbound forwarded UDP packets
 		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp -dport #{port} -m state --state NEW,ESTABLISHED`
 		#outbound forwarded UDP packets
@@ -72,7 +72,7 @@ def writeICMP
 	run = 0
 	while run < @icmpServices.length
 		#convert the current type to a string for the iptables command
-		typeString = @icmpServices[run]
+		typeString = @icmpServices[run].to_s
 		#inbound ICMP on allowed ports
 		`iptables -A FORWARD -i #{@internalInterface} -o #{@externalInterface} -p icmp --icmp-type #{typeString} -m state --state NEW,ESTABLISHED -j ACCEPT`
 		#outbound ICMP on allowed ports

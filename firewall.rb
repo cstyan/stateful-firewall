@@ -145,6 +145,13 @@ def writeICMP
 	`iptables -A icmpIn -j ACCEPT`
 end
 
+def defaultPolicy
+	#set default for every chain to drop
+	`iptables -P INPUT DROP`
+	`iptables -P OUTPUT DROP`
+	`iptables -P FORWARD DROP`
+end
+
 
 def configureNAT
 	puts "nat stuff"
@@ -154,12 +161,19 @@ def writeFirewall
 	#flush existing tables
 	puts "flushing IPTables"
 	`iptables -F`
-	#clear any previous user defined chains we have created
+
+	puts "removing existing user chain"
 	removeUserChains
-	#create user chains
+
+	put "setting default policies to drop"
+	defaultPolicy
+
+	puts"creating user chains"
 	createUserChains
+	
 	puts "writing drop rules to IPTables"
 	drop
+
 	puts "writing accept rules to IPTables"	
 	writeTCP
 	writeUDP

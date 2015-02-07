@@ -4,8 +4,9 @@
 @internalInterface = "p3p1"
 @extNetwork
 @externalInterface = "em1"
-@tcpServices = Array[53, 80, 443]
-@udpServices = Array[67, 68]
+@tcpServices = Array[80, 443]
+#I needed to put 53 in udp not tcp
+@udpServices = Array[53, 67, 68]
 @icmpServices = Array[0, 8]
 
 
@@ -44,8 +45,8 @@ end
 
 def drop
 	#all inbound packets to ports less than 1024, can't do two protocols in one line
-	`iptables -A FORWARD -i em1 -o p3p1 -p tcp --sport 0:1023 -j drop`
-	`iptables -A FORWARD -i em1 -o p3p1 -p udp --sport 0:1023 -j drop`
+	#`iptables -A FORWARD -i em1 -o p3p1 -p tcp --sport 0:1023 -j drop`
+	#`iptables -A FORWARD -i em1 -o p3p1 -p udp --sport 0:1023 -j drop`
 	#drop incoming christmas tree packets
 	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL ALL -j drop`
 	#drop outbound christmas tree packets

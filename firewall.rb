@@ -169,8 +169,17 @@ def defaultPolicy
 end
 
 
-def configureNAT
+def configuration
+	firewallIP = "192.168.0.17"
 	puts "nat stuff"
+	#maybe we should use variables for some of these?
+	#18 is the firewall machine
+	`ifconfig p3p1 192.168.10.1 up`
+	`echo "1" >/proc/sys/net/ipv4/ip_forward`
+	`route add -net 192.168.0.0 netmask 255.255.255.0 gw #{firewallIP}`
+	`route add -net 192.168.10.0/24 gw 192.168.10.1`
+	`iptables -t nat -A POSTROUTING -o em1 -j MASQUERADE`
+	`iptables -t nat -A PREROUTING -i em1 -j DNAT --to-destination 192.168.10.2`
 end
 #start of the firewall
 def writeFirewall

@@ -209,6 +209,7 @@ end
 
 def main
 	#we should call config nat here
+	configuration
 	writeFirewall
 end
 

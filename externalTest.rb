@@ -16,8 +16,17 @@ def testChristmas
 end
 
 def testNull
-	puts "Test3: block incmming Null scans."
+	puts "Test3: Block incmming Null scans."
 	`hping3 #{@ip} -c 5 -V -p 8000 -s 8080`
+end
+
+def testSynFin
+	puts "Test 4: Block incomming packets"
+	`hping3 #{@ip}-c 5 -V -p 8080 -s 8080 -SF`
+end
+
+def testTcp
+	puts "shit"
 end
 
 

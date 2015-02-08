@@ -181,7 +181,7 @@ def configuration
 	`route add -net 192.168.0.0 netmask 255.255.255.0 gw #{firewallIP}`
 	`route add -net 192.168.10.0/24 gw 192.168.10.1`
 	`iptables -t nat -A POSTROUTING -o em1 -j MASQUERADE`
-	`iptables -t nat -A PREROUTING -i em1 -j DNAT --to-destination 192.168.10.2`
+	#{}`iptables -t nat -A PREROUTING -i em1 -j DNAT --to-destination 192.168.10.2`
 end
 #start of the firewall
 def writeFirewall

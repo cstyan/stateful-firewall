@@ -45,8 +45,8 @@ end
 
 def drop
 	#all inbound packets to ports less than 1024, can't do two protocols in one line
-	#`iptables -A FORWARD -i em1 -o p3p1 -p tcp --sport 0:1023 -j drop`
-	#`iptables -A FORWARD -i em1 -o p3p1 -p udp --sport 0:1023 -j drop`
+	`iptables -A FORWARD -i em1 -o p3p1 -p tcp --dport 0:1023 -j drop`
+	`iptables -A FORWARD -i em1 -o p3p1 -p udp --dport 0:1023 -j drop`
 	#drop incoming christmas tree packets
 	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL ALL -j drop`
 	#drop outbound christmas tree packets
@@ -55,6 +55,8 @@ def drop
 	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL NONE -j drop`
 	#drop outbound null scan packets
 	`iptables -A FORWARD -p tcp -o em1 --tcp-flags ALL NONE -j drop`
+	#drop all fin,syn’s
+	`iptables -A FORWARD -p tcp -i em1 -o p3p1 --tcp-flags FIN,SYN SYN,FIN -j DROP`
 
 	#drop anything that gets forwarded to drop chain
 	`iptables -A drop -j DROP`
@@ -119,9 +121,9 @@ def writeTCP
 		#convert the current type to a string for the iptables command
 		port = @tcpServices[run]
 		#inbound forwarded tcp packets
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p tcp --dport #{port} -m state --state NEW,ESTABLISHED -j tcpIn`
 		#outbound forwarded tcp packets
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --sport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p tcp --sport #{port} -m state --state NEW,ESTABLISHED -j tcpOut`
 		run = run + 1
 	end
 	#accept everything that gets forwarded to tcpIn and tcpOut
@@ -135,9 +137,9 @@ def writeUDP
 		#convert the current type to a string for the iptables command
 		port = @udpServices[run]
 		#inbound forwarded UDP packets
-		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
+		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j udpIn`
 		#outbound forwarded UDP packets
-		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j ACCEPT`
+		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j udpOut`
 		run = run + 1
 	end
 	#accept everything that gets forwarded to udpIn and udpOut

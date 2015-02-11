@@ -1,67 +1,75 @@
+#### CONFIG SECTION
 #globals
 @filepath
 @intNetwork = "192.168.10.0/24"
 @internalInterface = "p3p1"
 @extNetwork
 @externalInterface = "em1"
-@tcpServices = Array[80, 443]
-#I needed to put 53 in udp not tcp
-@udpServices = Array[53, 67, 68]
+@tcpServices = Array[194]
+@udpServices = Array[194]
 @icmpServices = Array[0, 8]
+#### end of config
 
 
-#get all use input
-def userParams
-	puts "Please enter the full path to iptables or other utility you wish to use."
-	@filepath = gets.chomp
-
-	puts "Please enter the internal network space."
-	@intNetwork = gets.chomp
-
-	puts "Please enter the internal network interface."
-	@internalInterface = gets.chomp
-
-	puts "Please enter the external network space"
-	@extNetwork = gets.chomp
-
-	puts "Please enter the external network interface."
-	@externalInterface = gets.chomp
-
-	puts "Please enter TCP services you wish to allow by port #."
-	puts "Seperate each service with a comma."
-	@tcpServices = gets.chomp
-	@tcpServices = @tcpServices.split(",")
-
-	puts "Please enter UDP services you wish to allow by port #."
-	puts "Seperate each service with a comma."
-	@udpServices = gets.chomp
-	@udpServices = udpServices.split(",")
-
-	puts "Please enter ICMP services you wish to allow by type #."
-	puts "Seperate each service with a comma."
-	@icmpServices = gets.chomp
-	@icmpServices = tcpServices.split(",")
-end
-
+#things we always want to drop
 def drop
-	#all inbound packets to ports less than 1024, can't do two protocols in one line
-	`iptables -A FORWARD -i em1 -o p3p1 -p tcp --dport 0:1023 -j drop`
-	`iptables -A FORWARD -i em1 -o p3p1 -p udp --dport 0:1023 -j drop`
-	#drop incoming christmas tree packets
-	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL ALL -j drop`
-	#drop outbound christmas tree packets
-	`iptables -A FORWARD -p tcp -o em1 --tcp-flags ALL ALL -j drop`
-	#drop incoming null scan packets
-	`iptables -A FORWARD -p tcp -i em1 --tcp-flags ALL NONE -j drop`
-	#drop outbound null scan packets
-	`iptables -A FORWARD -p tcp -o em1 --tcp-flags ALL NONE -j drop`
-	#drop all fin,syn’s
-	`iptables -A FORWARD -p tcp -i em1 -o p3p1 --tcp-flags FIN,SYN SYN,FIN -j DROP`
+	#inbound SYNFIN
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --tcp-flag SYN,FIN SYN,FIN -j drop`
+	`iptables -A INPUT -p tcp --tcp-flag SYN,FIN SYN,FIN -j drop`
+	
+	#outbound SYNFIN
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} --tcp-flag SYN,FIN SYN,FIN -j drop`
+	
+	#inbound christmas tree
+	`iptables -A INPUT -p tcp --tcp-flag URG,PSH,FIN URG,PSH,FIN -j drop`
+	`iptables -A FORWARD -p tcp  -i #{@externalInterface} -o #{@internalInterface} --tcp-flag URG,PSH,FIN URG,PSH,FIN -j drop`
+	
+	#outbound christmas tree
+	`iptables -A FORWARD -p tcp -o #{@internalInterface} -i #{@externalInterface} --tcp-flag URG,PSH,FIN URG,PSH,FIN -j drop`
+	`iptables -A INPUT -p tcp --tcp-flag ALL NONE -j drop`
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --tcp-flag ALL NONE -j drop`
+	
+	#inbound telnet
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --dport 23 -j drop`
+	
+	#outbound telnet 
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} --dport 23 -j drop`
+	
+	#inbound packets external interface with an IP of the internal network
+	`iptables -A FORWARD -i #{@internalInterface} -o #{@externalInterface} -s #{@intNetwork} -j drop`
+	
+	#drop inbound syn packets to high ports
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --dport 1023: --tcp-flag SYN SYN -j drop`
+	
+	###### DROP OUTBOUND PACKETS VIA TCP AND UDP TO PORTS 32768-32755 && 137 - 139 ######
+	#### TCP
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} --dport 32755:32768 -j drop`
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} --dport 137:139 -j drop`
+	
+	#### UDP
+	`iptables -A FORWARD -p udp -o #{@externalInterface} -i #{@internalInterface} --dport 32755:32768 -j drop`
+	`iptables -A FORWARD -p udp -o #{@externalInterface} -i #{@internalInterface} --dport 137:139 -j drop`
+	
+	####### DROP OUTBOUND PACKETS TO TCP PORTS 111 && 515 #############
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} -m multiport --dport 111,515 -j drop`
+	
+	### BLOCK FRAGMENTS FROM NEW CONNECTIONS
+	###INBOUND FRAGMENTS ON NEW
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} -m state --state NEW -f -j drop`
+	###OUTBOUND FRAGMENTS ON NEW
+	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} -m state --state NEW -f -j drop`
+
+	######### ACCEPT FRAGMENTS FROM ESTABLISHED UDP CONNECTIONS #################
+	#### INBOUND FRAGMENTS
+	`iptables -A FORWARD -p udp -i #{@externalInterface} -o #{@internalInterface} -m state --state ESTABLISHED -f -j ACCEPT`
+	#### OUTBOUND FRAGMENTS
+	`iptables -A FORWARD -p udp -o #{@externalInterface} -i #{@internalInterface} -m state --state ESTABLISHED -f -j ACCEPT`
 
 	#drop anything that gets forwarded to drop chain
 	`iptables -A drop -j DROP`
 end
 
+#removes user chains that are created by this script
 def removeUserChains
 	#tcpIn
 	`iptables -X tcpIn`
@@ -81,6 +89,7 @@ def removeUserChains
 	`iptables -X other`
 end
 
+#creates user chains used by this script for IPTables
 def createUserChains
 	#tcpIn
 	`iptables -N tcpIn`
@@ -111,8 +120,35 @@ def allowLocal
 	`iptables -A OUTPUT -p udp --dport 53 -j ACCEPT`
 end
 
-def routing
-	
+#rules that we always want to allow
+#such as ftp and HTTP(S)
+def staticRules
+	##INBOUND SSH
+	#incoming SSH
+	`iptables -A FORWARD -p tcp -i em1 -o p3p1 -m state --state NEW,ESTABLISHED --dport 22 -j ACCEPT`
+	#responding SSH
+	`iptables -A FORWARD -p tcp -o em1 -i p3p1 -m state --state ESTABLISHED --sport 22 -j ACCEPT`
+
+	##OUTBOUND SSH
+	#outgoing ssh
+	`iptables -A FORWARD -p tcp -o em1 -i p3p1 -m state --state NEW,ESTABLISHED --dport 22 -j ACCEPT`
+	#responding ssh
+	`iptables -A FORWARD -p tcp -i em1 -o p3p1 -m state --state ESTABLISHED --sport 22 -j ACCEPT`
+	######### SSH #############
+
+	#outbound www
+	`iptables -I FORWARD -p tcp -i p3p1 -o em1 -m state --state NEW,ESTABLISHED -m multiport --dport 80,443 -j ACCEPT`
+	#responding www
+	`iptables -I FORWARD -p tcp -i em1 -o p3p1 -m state --state ESTABLISHED -m multiport --sport 80,443 -j ACCEPT`
+
+	#outbound ftp-data
+	`iptables -I FORWARD -p tcp -i p3p1 -o em1 -m state --state NEW,ESTABLISHED  --dport 20 -j ACCEPT`
+	#responding ftp-data
+	`iptables -I FORWARD -p tcp -o p3p1 -i em1 -m state --state ESTABLISHED  --sport 20 -j ACCEPT`
+	#outbound ftp-cmd
+	`iptables -I FORWARD -p tcp -i p3p1 -o em1 -m state --state NEW,ESTABLISHED  --dport 21 -j ACCEPT`
+	#responding ftp-cmd
+	`iptables -I FORWARD -p tcp -o p3p1 -i em1 -m state --state ESTABLISHED  --sport 21 -j ACCEPT`
 end
 
 def writeTCP
@@ -140,6 +176,14 @@ def writeUDP
 		`iptables -A FORWARD -i #{@internalInterface}  -o #{@externalInterface} -p udp --dport #{port} -m state --state NEW,ESTABLISHED -j udpIn`
 		#outbound forwarded UDP packets
 		`iptables -A FORWARD -o #{@internalInterface}  -i #{@externalInterface} -p udp --sport #{port} -m state --state NEW,ESTABLISHED -j udpOut`
+		
+		######### ACCEPT FRAGMENTS FROM ESTABLISHED UDP CONNECTIONS #################
+		#### INBOUND FRAGMENTS
+		`iptables -A FORWARD -p udp -i em1 -o p3p1 -m state --state ESTABLISHED -f -j ACCEPT`
+		#### OUTBOUND FRAGMENTS
+		`iptables -A FORWARD -p udp -o em1 -i p3p1 -m state --state ESTABLISHED -f -j ACCEPT`
+		######### ACCEPT FRAGMENTS FROM RELATED UDP CONNECTIONS #################
+
 		run = run + 1
 	end
 	#accept everything that gets forwarded to udpIn and udpOut
@@ -170,7 +214,7 @@ def defaultPolicy
 	`iptables -P FORWARD DROP`
 end
 
-
+#sets up ip's and routing 
 def configuration
 	firewallIP = "192.168.0.17"
 	puts "nat stuff"
@@ -183,6 +227,7 @@ def configuration
 	`iptables -t nat -A POSTROUTING -o em1 -j MASQUERADE`
 	#{}`iptables -t nat -A PREROUTING -i em1 -j DNAT --to-destination 192.168.10.2`
 end
+
 #start of the firewall
 def writeFirewall
 	#flush existing tables
@@ -191,17 +236,18 @@ def writeFirewall
 
 	puts "removing existing user chain"
 	removeUserChains
+	
+	puts"creating user chains"
+	createUserChains
 
 	puts "setting default policies to drop"
 	defaultPolicy
 
-	allowLocal
-
-	puts"creating user chains"
-	createUserChains
-	
 	puts "writing drop rules to IPTables"
 	drop
+	
+	puts "allowing dns and dhcp"
+	allowLocal
 
 	puts "writing accept rules to IPTables"	
 	writeTCP

@@ -35,9 +35,12 @@ puts "All tests send 1 packet per test case."
 puts "All tests should produce 100% packet loss."
 puts "Please enter the p3p1 IP of the firewall to use for testing."
 @ip = gets.chomp
-puts "Initial verbose iptables output."
-puts "*******************************************************"
-`iptables -L -x -v -n`
 puts "******************************************************"
 puts "Tests start now."
 puts "*******************************************************"
+testSF
+testXmas
+testNull
+testTelnet
+testStatic
+puts "End"

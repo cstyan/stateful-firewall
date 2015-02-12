@@ -22,7 +22,7 @@ def testInSubnet
 end
 
 def synHigh
-	`hping3 #{@ip} -c 1 -S -s 8888 -p 8888`
+	`hping3 #{@ip} -c 1 -S -s 8888 -p 8888 #{@ip}`
 end
 
 #ports required to be dropped via assignment requirements
@@ -37,7 +37,7 @@ end
 
 puts "Start of testing script for 8006 A2 - Stateful Firewall"
 puts "All tests send 1 packet per test case."
-puts "All tests should produce 100% packet loss.
+puts "All tests should produce 100% packet loss."
 puts"Please enter the em1 IP of the firewall to use for testing."
 @ip = gets.chomp
 puts "Initial verbose iptables output."
@@ -48,6 +48,7 @@ puts "Tests start now."
 puts "*******************************************************"
 testSF
 testXmas
+testNull
 testTelnet
 testInSubnet
 synHigh

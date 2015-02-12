@@ -8,6 +8,8 @@
 @tcpServices = Array[194]
 @udpServices = Array[194]
 @icmpServices = Array[0, 8]
+@firewallIP = "192.168.0.16"
+
 #### end of config
 
 
@@ -216,7 +218,7 @@ end
 
 #sets up ip's and routing 
 def configuration
-	firewallIP = "192.168.0.17"
+	firewallIP = @firewallIP
 	puts "nat stuff"
 	#maybe we should use variables for some of these?
 	#18 is the firewall machine

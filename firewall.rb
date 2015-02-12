@@ -5,15 +5,12 @@
 @internalInterface = "p3p1"
 @extNetwork
 @externalInterface = "em1"
-@tcpServices = Array[194]
-@udpServices = Array[194]
+@tcpServices = Array[194, 80, 443]
+@udpServices = Array[194, 53, 67, 78]
 @icmpServices = Array[0, 8]
-@firewallIP = "192.168.0.16"
-
 #### end of config
 
 
-#things we always want to drop
 def drop
 	#inbound SYNFIN
 	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --tcp-flag SYN,FIN SYN,FIN -j drop`
@@ -38,10 +35,11 @@ def drop
 	`iptables -A FORWARD -p tcp -o #{@externalInterface} -i #{@internalInterface} --dport 23 -j drop`
 	
 	#inbound packets external interface with an IP of the internal network
-	`iptables -A FORWARD -i #{@internalInterface} -o #{@externalInterface} -s #{@intNetwork} -j drop`
+	`iptables -A FORWARD -i #{@externalInterface} -s #{@intNetwork} -j drop`
 	
 	#drop inbound syn packets to high ports
-	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --dport 1023: --tcp-flag SYN SYN -j drop`
+	#I think this needs to be after our accepts
+	#`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --dport 1023: --tcp-flag SYN SYN -j drop`
 	
 	###### DROP OUTBOUND PACKETS VIA TCP AND UDP TO PORTS 32768-32755 && 137 - 139 ######
 	#### TCP
@@ -111,17 +109,6 @@ def createUserChains
 	`iptables -N other`
 end
 
-#allows dns and dhcp on the in/out chains of the firewall
-#note that this has nothing to do with the forwarding
-def allowLocal
-	#allow dhcp
-	`iptables -A INPUT -p udp --dport 67:68 --sport 67:68 -j ACCEPT`
-
-	#allow dns
-	`iptables -A INPUT -p udp --sport 53 -j ACCEPT`
-	`iptables -A OUTPUT -p udp --dport 53 -j ACCEPT`
-end
-
 #rules that we always want to allow
 #such as ftp and HTTP(S)
 def staticRules
@@ -137,11 +124,6 @@ def staticRules
 	#responding ssh
 	`iptables -A FORWARD -p tcp -i em1 -o p3p1 -m state --state ESTABLISHED --sport 22 -j ACCEPT`
 	######### SSH #############
-
-	#outbound www
-	`iptables -I FORWARD -p tcp -i p3p1 -o em1 -m state --state NEW,ESTABLISHED -m multiport --dport 80,443 -j ACCEPT`
-	#responding www
-	`iptables -I FORWARD -p tcp -i em1 -o p3p1 -m state --state ESTABLISHED -m multiport --sport 80,443 -j ACCEPT`
 
 	#outbound ftp-data
 	`iptables -I FORWARD -p tcp -i p3p1 -o em1 -m state --state NEW,ESTABLISHED  --dport 20 -j ACCEPT`
@@ -247,14 +229,12 @@ def writeFirewall
 
 	puts "writing drop rules to IPTables"
 	drop
-	
-	puts "allowing dns and dhcp"
-	allowLocal
 
 	puts "writing accept rules to IPTables"	
 	writeTCP
 	writeUDP
 	writeICMP
+	`iptables -A FORWARD -p tcp -i #{@externalInterface} -o #{@internalInterface} --dport 1023: --tcp-flag SYN SYN -j drop`
 end
 
 def main

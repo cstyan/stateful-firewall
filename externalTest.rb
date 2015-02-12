@@ -52,3 +52,6 @@ testTelnet
 testInSubnet
 synHigh
 dropStatic
+puts "Ending verbose iptables output."
+puts "*******************************************************"
+`iptables -L -x -v -n`
